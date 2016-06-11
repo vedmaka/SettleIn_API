@@ -1,0 +1,23 @@
+{
+	"name": "SettleInAPI",
+	"version": "0.0.1",
+	"author": [
+		"Jon Anderton"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:SettleInAPI",
+	"descriptionmsg": "settleinapi-desc",
+	"license-name": "MIT",
+	"type": "other",
+	"AutoloadClasses": {
+        "SettleInAPI": "SettleInAPI.class.php",
+		"SettleInAPIHooks": "SettleInAPI.hooks.php"
+	},
+	"config": {
+		"LockFormEditCategories": []
+	},
+	"Hooks": {
+	},
+	"APIModules": {
+		"settlein": "SettleInAPI"
+	}
+}
