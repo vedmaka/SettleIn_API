@@ -16,6 +16,9 @@
 		"LockFormEditCategories": []
 	},
 	"Hooks": {
+		"UnitTestsList": [
+				"SettleInAPIHooks::onUnitTestsList"
+			]
 	},
 	"APIModules": {
 		"settlein": "SettleInAPI"

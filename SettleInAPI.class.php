@@ -46,6 +46,11 @@ class SettleInAPI extends ApiBase {
 			    }
 		    }
 	    //}
+	    
+	    // If title with exact same name already exists lets add it to suggestions
+	    if( $isTitleExists ) {
+	        $suggestions[] = $searchTitle;
+	    }
 
         $this->fResult['exists'] = (int)$isTitleExists;
         $this->fResult['suggestions'] = $suggestions;
