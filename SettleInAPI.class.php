@@ -21,19 +21,52 @@ class SettleInAPI extends ApiBase {
     
     private function check_unique()
     {
-        #$title = $this->params['title'];
-        #$search = SearchEngine::create();
-        #$search->setNamespaces( NS_MAIN );
-        #$result = $search->searchTitle( $title );
-        $this->fResult['test'] = $this->parsedParams['do'];
-        //die($this->params['pagename']);
+        $title = $this->parsedParams['page'];
+	    $searchTitle = Title::newFromText( $title );
+
+	    $isTitleExists = false;
+	    if( $searchTitle && $searchTitle->exists() ) {
+	    	$isTitleExists = true;
+	    }
+
+	    $suggestions = array();
+
+	    //if( $isTitleExists ) {
+		    $search = SearchEngine::create();
+		    $search->setNamespaces( array( NS_MAIN ) );
+		    $search->setLimitOffset( 10 );
+		    $result = $search->searchTitle( $search->transformSearchTerm( $search->replacePrefixes($title) ) );
+		    //$result = $search->getNearMatchResultSet( $search->transformSearchTerm( $search->replacePrefixes($title) ) );
+		    if( !is_null($result) ) {
+			    while ( $row = $result->next() ) {
+				    if ( $searchTitle->getArticleID() === $row->getTitle()->getArticleID() ) {
+					    continue;
+				    }
+				    $suggestions[] = $row->getTitle()->getBaseText();
+			    }
+		    }
+	    //}
+
+        $this->fResult['exists'] = (int)$isTitleExists;
+        $this->fResult['suggestions'] = $suggestions;
+
     }
     
     public function getAllowedParams()
     {
         return array(
-            'do' => false,
-            'pagename' => false
+            'do' => array(
+                ApiBase::PARAM_TYPE => 'string',
+                ApiBase::PARAM_REQUIRED => true
+            ),
+            'page' => array(
+                ApiBase::PARAM_TYPE => 'string',
+                ApiBase::PARAM_REQUIRED => false
+            ),
+	        'category' => array(
+	        	ApiBase::PARAM_TYPE => 'string',
+		        ApiBase::PARAM_REQUIRED => false
+	        )
         );
     }
     
