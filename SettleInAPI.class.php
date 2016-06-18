@@ -42,14 +42,20 @@ class SettleInAPI extends ApiBase {
 				    if ( $searchTitle->getArticleID() === $row->getTitle()->getArticleID() ) {
 					    continue;
 				    }
-				    $suggestions[] = $row->getTitle()->getBaseText();
+				    $suggestions[] = array(
+				    	'title' => $row->getTitle()->getBaseText(),
+					    'link' => $row->getTitle()->getFullURL()
+				    );
 			    }
 		    }
 	    //}
 	    
 	    // If title with exact same name already exists lets add it to suggestions
 	    if( $isTitleExists ) {
-	        $suggestions[] = $searchTitle;
+	        $suggestions[] = array(
+	        	'title' => $searchTitle->getBaseText(),
+		        'link' => $searchTitle->getFullURL()
+	        );
 	    }
 
         $this->fResult['exists'] = (int)$isTitleExists;
@@ -71,6 +77,10 @@ class SettleInAPI extends ApiBase {
 	        'category' => array(
 	        	ApiBase::PARAM_TYPE => 'string',
 		        ApiBase::PARAM_REQUIRED => false
+	        ),
+	        'country' => array(
+	        	ApiBase::PARAM_TYPE => 'string',
+	        	ApiBase::PARAM_REQUIRED => false
 	        )
         );
     }
