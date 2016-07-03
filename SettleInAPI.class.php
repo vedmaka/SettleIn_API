@@ -22,33 +22,50 @@ class SettleInAPI extends ApiBase {
     private function check_unique()
     {
         $title = $this->parsedParams['page'];
-	    $searchTitle = Title::newFromText( $title );
+
+	    $country = false;
+	    $state = false;
+	    $city = false;
+
+	    if( $this->parsedParams['country'] && !empty($this->parsedParams['country']) ) {
+	    	$country = $this->parsedParams['country'];
+	    }
+
+	    if( $this->parsedParams['state'] && !empty($this->parsedParams['state']) ) {
+		    $state = $this->parsedParams['state'];
+	    }
+
+	    if( $this->parsedParams['city'] && !empty($this->parsedParams['city']) ) {
+		    $city = $this->parsedParams['city'];
+	    }
+
+	    //$searchTitle = Title::newFromText( $title );
 
 	    $isTitleExists = false;
+
+	    /*
 	    if( $searchTitle && $searchTitle->exists() ) {
 	    	$isTitleExists = true;
 	    }
 
 	    $suggestions = array();
 
-	    //if( $isTitleExists ) {
-		    $search = SearchEngine::create();
-		    $search->setNamespaces( array( NS_MAIN ) );
-		    $search->setLimitOffset( 10 );
-		    $result = $search->searchTitle( $search->transformSearchTerm( $search->replacePrefixes($title) ) );
-		    //$result = $search->getNearMatchResultSet( $search->transformSearchTerm( $search->replacePrefixes($title) ) );
-		    if( !is_null($result) ) {
-			    while ( $row = $result->next() ) {
-				    if ( $searchTitle->getArticleID() === $row->getTitle()->getArticleID() ) {
-					    continue;
-				    }
-				    $suggestions[] = array(
-				    	'title' => $row->getTitle()->getBaseText(),
-					    'link' => $row->getTitle()->getFullURL()
-				    );
+	    $search = SearchEngine::create();
+	    $search->setNamespaces( array( NS_MAIN ) );
+	    $search->setLimitOffset( 10 );
+	    $result = $search->searchTitle( $search->transformSearchTerm( $search->replacePrefixes($title) ) );
+	    //$result = $search->getNearMatchResultSet( $search->transformSearchTerm( $search->replacePrefixes($title) ) );
+	    if( !is_null($result) ) {
+		    while ( $row = $result->next() ) {
+			    if ( $searchTitle->getArticleID() === $row->getTitle()->getArticleID() ) {
+				    continue;
 			    }
+			    $suggestions[] = array(
+			        'title' => $row->getTitle()->getBaseText(),
+				    'link' => $row->getTitle()->getFullURL()
+			    );
 		    }
-	    //}
+	    }
 	    
 	    // If title with exact same name already exists lets add it to suggestions
 	    if( $isTitleExists ) {
@@ -56,11 +73,70 @@ class SettleInAPI extends ApiBase {
 	        	'title' => $searchTitle->getBaseText(),
 		        'link' => $searchTitle->getFullURL()
 	        );
+	    }*/
+
+	    $suggestions = array();
+
+	    // Perform semantic search
+	    $sqi = new \SQI\SemanticQueryInterface();
+
+	    $query = $sqi->category('Card');
+
+	    $query->condition( 'Title', ucfirst($title) );
+
+	    if( $country ) {
+	    	$query->condition( 'Country', $country );
+	    }
+	    if( $state ) {
+		    $query->condition( 'State', $state );
+	    }
+	    if( $city ) {
+		    $query->condition( 'City', $city );
+	    }
+
+	    $results = $sqi->toArray();
+
+	    if( count($results) ) {
+	    	$isTitleExists = true;
+		    foreach ($results as $result) {
+		    	$suggestions[] = array(
+		    		'title' => $result['title']->getBaseText(),
+				    'link' => $result['title']->getFullURL()
+			    );
+		    }
+	    }else{
+	    	// There is no exact match, but should we display similar pages instead ?
+			$suggestions = $this->getSimilarPages( $title );
 	    }
 
         $this->fResult['exists'] = (int)$isTitleExists;
         $this->fResult['suggestions'] = $suggestions;
 
+    }
+
+    private function getSimilarPages( $titleName )
+    {
+	    $suggestions = array();
+
+	    $search = SearchEngine::create();
+	    $search->setNamespaces( array( NS_MAIN ) );
+	    $search->setLimitOffset( 10 );
+	    $result = $search->searchTitle( $search->transformSearchTerm( $search->replacePrefixes( $titleName ) ) );
+
+	    if( !is_null($result) ) {
+		    while ( $row = $result->next() ) {
+		    	//TODO: fix that
+			    if ( strtolower($titleName) === strtolower($row->getTitle()->getBaseText()) ) {
+				    continue;
+			    }
+			    $suggestions[] = array(
+				    'title' => $row->getTitle()->getBaseText(),
+				    'link' => $row->getTitle()->getFullURL()
+			    );
+		    }
+	    }
+
+	    return $suggestions;
     }
     
     public function getAllowedParams()
@@ -81,7 +157,16 @@ class SettleInAPI extends ApiBase {
 	        'country' => array(
 	        	ApiBase::PARAM_TYPE => 'string',
 	        	ApiBase::PARAM_REQUIRED => false
-	        )
+	        ),
+            'state' => array(
+	            ApiBase::PARAM_TYPE => 'string',
+	            ApiBase::PARAM_REQUIRED => false
+            ),
+            'city' => array(
+	            ApiBase::PARAM_TYPE => 'string',
+	            ApiBase::PARAM_REQUIRED => false
+            )
+
         );
     }
     
