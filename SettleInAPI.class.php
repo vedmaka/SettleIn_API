@@ -82,7 +82,8 @@ class SettleInAPI extends ApiBase {
 
 	    $query = $sqi->category('Card');
 
-	    $query->condition( 'Title', ucfirst($title) );
+	    $query->condition( array( 'Title', ucfirst($title).'*', SMW_CMP_LIKE ) );
+	    //$query->condition( 'Title', '~'.ucfirst($title).'*' );
 
 	    if( $country ) {
 	    	$query->condition( 'Country', $country );
@@ -100,13 +101,14 @@ class SettleInAPI extends ApiBase {
 	    	$isTitleExists = true;
 		    foreach ($results as $result) {
 		    	$suggestions[] = array(
-		    		'title' => $result['title']->getBaseText(),
+		    		'title' => SemanticTitle::getText( $result['title'] ),
 				    'link' => $result['title']->getFullURL()
 			    );
 		    }
 	    }else{
 	    	// There is no exact match, but should we display similar pages instead ?
-			$suggestions = $this->getSimilarPages( $title );
+			//$suggestions = $this->getSimilarPages( $title );
+		    //TODO: nothing to do here with Semantic Title enabled
 	    }
 
         $this->fResult['exists'] = (int)$isTitleExists;
