@@ -77,24 +77,7 @@ class SettleInAPI extends ApiBase {
 
 	    $suggestions = array();
 
-	    // Perform semantic search
-	    $sqi = new \SQI\SemanticQueryInterface();
-
-	    $query = $sqi->category('Card');
-
-	    $query->like( 'Title', ucfirst($title).'*' );
-
-	    if( $country ) {
-	    	$query->condition( 'Country', $country );
-	    }
-	    if( $state ) {
-		    $query->condition( 'State', $state );
-	    }
-	    if( $city ) {
-		    $query->condition( 'City', $city );
-	    }
-
-	    $results = $sqi->toArray();
+	    $results = $this->getExactPages( $title, $country, $state, $city );
 
 	    if( count($results) ) {
 	    	$isTitleExists = true;
@@ -107,13 +90,61 @@ class SettleInAPI extends ApiBase {
 	    }else{
 	    	// There is no exact match, but should we display similar pages instead ?
 			//$suggestions = $this->getSimilarPages( $title );
-		    //TODO: nothing to do here with Semantic Title enabled
+		    $suggestions = $this->getSimilarPagesEx( $title );
 	    }
 
         $this->fResult['exists'] = (int)$isTitleExists;
         $this->fResult['suggestions'] = $suggestions;
 
     }
+
+	private function getExactPages( $title, $country, $state, $city )
+	{
+		// Perform semantic search
+		$sqi = new \SQI\SemanticQueryInterface();
+
+		$query = $sqi->category('Card');
+
+		$query->equals( 'Title', ucfirst($title) );
+
+		if( $country ) {
+			$query->condition( 'Country', $country );
+		}
+		if( $state ) {
+			$query->condition( 'State', $state );
+		}
+		if( $city ) {
+			$query->condition( 'City', $city );
+		}
+
+		$results = $sqi->toArray();
+
+		return $results;
+	}
+
+	private function getSimilarPagesEx( $title )
+	{
+		$suggestions = array();
+
+		// Perform semantic search
+		$sqi = new \SQI\SemanticQueryInterface();
+
+		$query = $sqi->category('Card');
+
+		$query->like( 'Title', ucfirst($title).'*' );
+
+		$results = $sqi->toArray();
+		if( count($results) ) {
+			foreach ($results as $result) {
+				$suggestions[] = array(
+					'title' => SemanticTitle::getText( $result['title'] ),
+					'link' => $result['title']->getFullURL()
+				);
+			}
+		}
+
+		return $suggestions;
+	}
 
     private function getSimilarPages( $titleName )
     {
