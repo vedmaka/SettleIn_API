@@ -82,8 +82,7 @@ class SettleInAPI extends ApiBase {
 
 	    $query = $sqi->category('Card');
 
-	    $query->condition( array( 'Title', ucfirst($title).'*', SMW_CMP_LIKE ) );
-	    //$query->condition( 'Title', '~'.ucfirst($title).'*' );
+	    $query->like( 'Title', ucfirst($title).'*' );
 
 	    if( $country ) {
 	    	$query->condition( 'Country', $country );
