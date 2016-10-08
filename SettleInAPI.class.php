@@ -77,7 +77,8 @@ class SettleInAPI extends ApiBase {
 
 	    $suggestions = array();
 
-	    $results = $this->getExactPages( $title, $country, $state, $city );
+	    //$results = $this->getExactPages( $title, $country, $state, $city );
+	    $results = $this->getExactPagesSphinx( $title, $country, $state, $city );
 
 	    if( count($results) ) {
 	    	$isTitleExists = true;
@@ -90,13 +91,84 @@ class SettleInAPI extends ApiBase {
 	    }else{
 	    	// There is no exact match, but should we display similar pages instead ?
 			//$suggestions = $this->getSimilarPages( $title );
-		    $suggestions = $this->getSimilarPagesEx( $title );
+		    //$suggestions = $this->getSimilarPagesEx( $title );
+		    $suggestions = $this->getSimilarPagesSphinx( $title );
 	    }
 
         $this->fResult['exists'] = (int)$isTitleExists;
         $this->fResult['suggestions'] = $suggestions;
 
     }
+
+    //TODO: use Sphinx to query title-related properties to reduce CPU load and improve matching
+	private function getExactPagesSphinx( $title, $country, $state, $city )
+	{
+
+		//TODO: be safe, but may lead to some unnecessary mismatches until same filter applied to page creation action
+		$title = str_replace('"', '', $title);
+
+		$store = SphinxStore::getInstance();
+		$results = array();
+		$result = $store->getQuery()
+			->select('id')
+			->from( $store->getIndex() )
+			// Query against `alias_title` attribute (not field) to receive exact case-insensitive match
+			->where( 'alias_title', $title );
+			//->match( 'title', \Foolz\SphinxQL\SphinxQL::expr('"^'.$title.'$"') );
+
+		if( $country ) {
+			$result->where( 'properties.country[0]', $country );
+		}
+
+		if( $state ) {
+			$result->where( 'properties.state[0]', $state );
+		}
+
+		if( $city ) {
+			$result->where( 'properties.city[0]', $city );
+		}
+
+		$result = $result->execute();
+
+		if( $result ) {
+			foreach ($result as $r) {
+				$results[] = array(
+					'title' => Title::newFromID( $r['id'] )
+				);
+			}
+		}
+
+		return $results;
+	}
+
+	private function getSimilarPagesSphinx( $title )
+	{
+
+		//TODO: be safe, but may lead to some unnecessary mismatches until same filter applied to page creation action
+		$title = str_replace('"', '', $title);
+		$results = array();
+
+		$store = SphinxStore::getInstance();
+		$result = $store->getQuery()
+			->select('id')
+			->from( $store->getIndex() )
+			->match('*', $title)
+			->execute();
+
+		if( $result )
+		{
+			foreach ( $result as $r ) {
+				$t = Title::newFromID( $r['id'] );
+				$results[] = array(
+					'title' => SemanticTitle::getText( $t ),
+					'link' => $t->getFullURL()
+				);
+			}
+		}
+
+		return $results;
+
+	}
 
 	private function getExactPages( $title, $country, $state, $city )
 	{
