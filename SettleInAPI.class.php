@@ -92,7 +92,7 @@ class SettleInAPI extends ApiBase {
 	    	// There is no exact match, but should we display similar pages instead ?
 			//$suggestions = $this->getSimilarPages( $title );
 		    //$suggestions = $this->getSimilarPagesEx( $title );
-		    $suggestions = $this->getSimilarPagesSphinx( $title );
+		    $suggestions = $this->getSimilarPagesSphinx( $title, $country, $state, $city  );
 	    }
 
         $this->fResult['exists'] = (int)$isTitleExists;
@@ -141,7 +141,7 @@ class SettleInAPI extends ApiBase {
 		return $results;
 	}
 
-	private function getSimilarPagesSphinx( $title )
+	private function getSimilarPagesSphinx( $title, $country, $state, $city  )
 	{
 
 		//TODO: be safe, but may lead to some unnecessary mismatches until same filter applied to page creation action
@@ -152,8 +152,21 @@ class SettleInAPI extends ApiBase {
 		$result = $store->getQuery()
 			->select('id')
 			->from( $store->getIndex() )
-			->match('*', $title)
-			->execute();
+			->match('*', $title);
+			
+		if( $country ) {
+			$result->where( 'properties.country[0]', $country );
+		}
+
+		if( $state ) {
+			$result->where( 'properties.state[0]', $state );
+		}
+
+		if( $city ) {
+			$result->where( 'properties.city[0]', $city );
+		}
+			
+		$result = $result->execute();
 
 		if( $result )
 		{
